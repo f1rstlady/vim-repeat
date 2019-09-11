@@ -49,22 +49,22 @@ if exists("g:loaded_repeat") || &compatible || v:version < 700
 endif
 let g:loaded_repeat = 1
 
-let g:repeat_tick = -1
-let g:repeat_reg = ['', '']
+let s:changedtick = -1
+let s:register = ['', '']
 
 function! repeat#set(sequence,...)
-	let g:repeat_sequence = a:sequence
-	let g:repeat_count = a:0 ? a:1 : v:count
-	let g:repeat_tick = b:changedtick
+	let s:sequence = a:sequence
+	let s:count = a:0 ? a:1 : v:count
+	let s:changedtick = b:changedtick
 	augroup repeat_custom_motion
 		autocmd!
 		autocmd CursorMoved <buffer>
-			\ let g:repeat_tick = b:changedtick | autocmd! repeat_custom_motion
+			\ let s:changedtick = b:changedtick | autocmd! repeat_custom_motion
 	augroup END
 endfunction
 
 function! repeat#setreg(sequence,register)
-	let g:repeat_reg = [a:sequence, a:register]
+	let s:register = [a:sequence, a:register]
 endfunction
 
 function! s:default_register()
@@ -80,14 +80,14 @@ endfunction
 
 function! repeat#run(count)
 	try
-		if g:repeat_tick == b:changedtick
+		if s:changedtick == b:changedtick
 			let register = ''
-			if g:repeat_reg[0] ==# g:repeat_sequence && !empty(g:repeat_reg[1])
+			if s:register[0] ==# s:sequence && !empty(s:register[1])
 				" Take the original register, unless another (non-default, we
 				" unfortunately cannot detect no vs. a given default register)
 				" register has been supplied to the repeat command (as an
 				" explicit override).
-				let regname = v:register ==# s:default_register() ? g:repeat_reg[1] : v:register
+				let regname = v:register ==# s:default_register() ? s:register[1] : v:register
 				if regname ==# '='
 					" This causes a re-evaluation of the expression on repeat, which
 					" is what we want.
@@ -97,11 +97,11 @@ function! repeat#run(count)
 				endif
 			endif
 
-			let sequence = g:repeat_sequence
-			if g:repeat_count == -1
+			let sequence = s:sequence
+			if s:count == -1
 				let count = ""
 			else
-				let count = (a:count ? a:count : (g:repeat_count ? g:repeat_count : ''))
+				let count = a:count ? a:count : (s:count ? s:count : '')
 			endif
 			if ((v:version == 703 && has('patch100')) || (v:version == 704 && !has('patch601')))
 				execute 'normal ' . register . count . sequence
@@ -126,11 +126,11 @@ function! repeat#run(count)
 endfunction
 
 function! repeat#wrap(command,count)
-	let preserve = (g:repeat_tick == b:changedtick)
+	let preserve = (s:changedtick == b:changedtick)
 	call feedkeys((a:count ? a:count : '').a:command, 'n')
 	execute (&foldopen =~# 'undo\|all' ? 'normal! zv' : '')
 	if preserve
-		let g:repeat_tick = b:changedtick
+		let s:changedtick = b:changedtick
 	endif
 endfunction
 
@@ -155,9 +155,9 @@ endif
 augroup repeatPlugin
 	autocmd!
 	autocmd BufLeave,BufWritePre,BufReadPre *
-		\ let g:repeat_tick = (g:repeat_tick == b:changedtick || g:repeat_tick == 0) ? 0 : -1
+		\ let s:changedtick = (s:changedtick == b:changedtick || s:changedtick == 0) ? 0 : -1
 	autocmd BufEnter,BufWritePost *
-		\ if g:repeat_tick == 0 | let g:repeat_tick = b:changedtick | endif
+		\ if s:changedtick == 0 | let s:changedtick = b:changedtick | endif
 augroup END
 
 " vim: tw=100
